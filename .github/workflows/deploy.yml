@@ -1,0 +1,35 @@
+name: Deploy Laravel to CPanel
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo -e "Host myserver\n  HostName ${{ secrets.SSH_HOST }}\n  User ${{ secrets.SSH_USERNAME }}\n  Port 31988\n  IdentityFile ~/.ssh/id_rsa\n  StrictHostKeyChecking no" > ~/.ssh/config
+          ssh-keyscan -p 31988 -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          ssh myserver << 'EOF'
+            cd /home/emzawebi/domains/iot.emza.web.id
+            git reset --hard
+            git pull origin production
+            /opt/alt/php83/usr/bin/php /home/emzawebi/bin/composer install --no-dev --optimize-autoloader --no-interaction
+            /opt/alt/php83/usr/bin/php artisan migrate --force
+            /opt/alt/php83/usr/bin/php artisan config:cache
+            /opt/alt/php83/usr/bin/php artisan route:cache
+            /opt/alt/php83/usr/bin/php artisan view:cache
+          EOF
