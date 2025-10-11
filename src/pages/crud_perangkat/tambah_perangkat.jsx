@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "@/components/Sidebar";
 
+let isSubmitting = false;
+
 export default function TambahPerangkat() {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
@@ -44,53 +46,51 @@ export default function TambahPerangkat() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+  e.preventDefault();
 
-        // Cegah multiple submissions
-        if (isLoading) {
-            return;
-        }
+  // Cegah spam klik secara sinkron
+  if (isSubmitting || isLoading) return;
+  isSubmitting = true;
 
-        if (!form.name.trim() || !form.user_id) {
-            alert("Nama perangkat dan user harus diisi!");
-            return;
-        }
+  if (!form.name.trim() || !form.user_id) {
+    alert("Nama perangkat dan user harus diisi!");
+    isSubmitting = false;
+    return;
+  }
 
-        setIsLoading(true);
+  setIsLoading(true);
 
-        try {
-            await axios.post(`${API_BASE_URL}/Volt_device`, {
-                name: form.name,
-                user_id: parseInt(form.user_id),
-                max_flow_daily: parseFloat(form.max_flow_daily),
-                start_time: form.start_time,
-                end_time: form.end_time,
-                tegangan1: 0,
-                tegangan2: 0,
-                tegangan3: 0,
-                tegangan4: 0,
-                tegangan5: 0,
-                tegangan6: 0,
-                flow_rate: 0,
-                Daya: parseFloat(form.daya), 
-            }, {
-                headers: {
-                    "X-Tenant-Token": TENANT_TOKEN,
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                }
-            });
-            navigate("/Perangkat");
-        } catch (error) {
-            console.error("Gagal menambahkan perangkat", error);
-            if (error.response) {
-                console.error("Detail error:", error.response.data);
-            }
-            alert("Gagal menambahkan perangkat. Lihat konsol untuk detail.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  try {
+    await axios.post(`${API_BASE_URL}/Volt_device`, {
+      name: form.name,
+      user_id: parseInt(form.user_id),
+      max_flow_daily: parseFloat(form.max_flow_daily),
+      start_time: form.start_time,
+      end_time: form.end_time,
+      tegangan1: 0,
+      tegangan2: 0,
+      tegangan3: 0,
+      tegangan4: 0,
+      tegangan5: 0,
+      tegangan6: 0,
+      flow_rate: 0,
+      Daya: parseFloat(form.daya),
+    }, {
+      headers: {
+        "X-Tenant-Token": TENANT_TOKEN,
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
+    navigate("/Perangkat");
+  } catch (error) {
+    console.error("Gagal menambahkan perangkat", error);
+    alert("Gagal menambahkan perangkat.");
+  } finally {
+    isSubmitting = false; // reset agar bisa digunakan lagi nanti
+    setIsLoading(false);
+  }
+};
 
     return (
         <div className="flex min-h-screen bg-gradient-to-b from-[#f6f9ff] to-[#eaf0ff]">
