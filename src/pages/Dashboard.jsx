@@ -55,7 +55,7 @@ const Dashboard = () => {
               const detail = await res.json();
               const now = new Date();
               const lastSeen = new Date(device.updatedAt);
-              const isConnected = now - lastSeen < 2 * 60 * 1000;
+              const isConnected = now - lastSeen < 30 * 1000;
 
               return {
                 ...device,
