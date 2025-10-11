@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { useNavigate } from "react-router-dom";
 
+let isSubmitting = false;
+
 const UserTambah = () => {
     const [form, setForm] = useState({
         name: "",
@@ -11,7 +13,7 @@ const UserTambah = () => {
         status: true,
     });
 
-    const [errors, setErrors] = useState({}); // ← NEW: Untuk simpan error per field
+    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -26,21 +28,26 @@ const UserTambah = () => {
             [name]: type === "checkbox" ? checked : value,
         });
 
-        // Hapus error ketika user mengubah input
-        setErrors(prev => ({ ...prev, [name]: null }));
+        // Hapus error ketika input diubah
+        setErrors((prev) => ({ ...prev, [name]: null }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // ⛔ Cegah spam klik sinkron
+        if (isSubmitting || loading) return;
+        isSubmitting = true;
+
         setLoading(true);
-        setErrors({}); // bersihkan error lama
+        setErrors({});
 
         try {
             const res = await fetch(`${API_BASE_URL}/user`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                     "X-Tenant-Token": TENANT_TOKEN,
                 },
                 body: JSON.stringify(form),
@@ -51,10 +58,9 @@ const UserTambah = () => {
             if (!res.ok) {
                 console.error("Respon error:", data);
 
-                // Tampilkan pesan error field jika ada
                 if (data.errors) {
                     setErrors(data.errors);
-                    return; // jangan alert umum
+                    return;
                 }
 
                 throw new Error(data.message || "Gagal menambahkan user");
@@ -66,6 +72,7 @@ const UserTambah = () => {
             alert(err.message || "Terjadi kesalahan saat menyimpan data");
             console.error(err);
         } finally {
+            isSubmitting = false;
             setLoading(false);
         }
     };
@@ -80,8 +87,18 @@ const UserTambah = () => {
                         onClick={() => navigate("/user")}
                         className="p-2 hover:bg-white/50 rounded-lg transition-colors md:hidden"
                     >
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        <svg
+                            className="w-5 h-5 text-gray-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                            />
                         </svg>
                     </button>
                     <h1 className="text-xl md:text-xl font-medium text-gray-800">
@@ -90,7 +107,10 @@ const UserTambah = () => {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100"
+                >
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 text-black gap-6">
                             {/* Nama */}
@@ -107,7 +127,11 @@ const UserTambah = () => {
                                     placeholder="Masukkan nama lengkap"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 />
-                                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                                {errors.name && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.name}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Username */}
@@ -122,9 +146,17 @@ const UserTambah = () => {
                                     onChange={handleChange}
                                     required
                                     placeholder="Masukkan username"
-                                    className={`w-full px-4 py-3 rounded-lg border ${errors.username ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-blue-500"} focus:border-transparent transition-all`}
+                                    className={`w-full px-4 py-3 rounded-lg border ${
+                                        errors.username
+                                            ? "border-red-500 focus:ring-red-500"
+                                            : "border-gray-200 focus:ring-blue-500"
+                                    } focus:border-transparent transition-all`}
                                 />
-                                {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+                                {errors.username && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.username}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Password */}
@@ -141,7 +173,11 @@ const UserTambah = () => {
                                     placeholder="Masukkan password"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 />
-                                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                                {errors.password && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.password}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Role */}
@@ -171,7 +207,9 @@ const UserTambah = () => {
                                         onChange={handleChange}
                                         className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="text-sm font-medium text-gray-700">Pengguna Aktif</span>
+                                    <span className="text-sm font-medium text-gray-700">
+                                        Pengguna Aktif
+                                    </span>
                                 </label>
                             </div>
                         </div>
@@ -189,20 +227,39 @@ const UserTambah = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center gap-2 disabled:opacity-60"
+                            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg transition-colors font-medium focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center gap-2 ${
+                                loading
+                                    ? "bg-blue-400 pointer-events-none cursor-not-allowed"
+                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
                         >
                             {loading ? (
                                 <>
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    <svg
+                                        className="animate-spin h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
                                     </svg>
-                                    <span>Menyimpan...</span>
+                                    Menyimpan...
                                 </>
                             ) : (
                                 <>
                                     <span>💾</span>
-                                    <span>Simpan</span>
+                                    Simpan
                                 </>
                             )}
                         </button>
